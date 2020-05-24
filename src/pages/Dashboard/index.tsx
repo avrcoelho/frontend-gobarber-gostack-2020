@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { isToday, format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 import { FiPower, FiClock } from 'react-icons/fi';
 import DayPicker, { DayModifiers } from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
@@ -25,12 +27,22 @@ interface MonthAvailabilityItem {
   available: boolean;
 }
 
+interface AppointmentItem {
+  id: string;
+  date: string;
+  user: {
+    name: string;
+    avatar_url: string;
+  };
+}
+
 const Dashboard: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [monthAvailability, setMonthAvailability] = useState<
     MonthAvailabilityItem[]
   >([]);
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
 
   const { signOut, user } = useAuth();
 
@@ -57,6 +69,18 @@ const Dashboard: React.FC = () => {
     return dates;
   }, [currentMonth, monthAvailability]);
 
+  const selectedDateAsText = useMemo(() => {
+    return format(selectedDate, "'Dai' dd 'de' MMMM", {
+      locale: ptBR,
+    });
+  }, [selectedDate]);
+
+  const selectedWeekDay = useMemo(() => {
+    return format(selectedDate, 'cccc', {
+      locale: ptBR,
+    });
+  }, [selectedDate]);
+
   useEffect(() => {
     api
       .get(`providers/${user.id}/month-availability`, {
@@ -70,6 +94,20 @@ const Dashboard: React.FC = () => {
       });
   }, [currentMonth, user.id]);
 
+  useEffect(() => {
+    api
+      .get('appointments/me', {
+        params: {
+          year: selectedDate.getFullYear(),
+          month: selectedDate.getMonth(),
+          day: selectedDate.getDate(),
+        },
+      })
+      .then(response => {
+        setAppointments(response.data);
+      });
+  }, [selectedDate]);
+
   return (
     <Container>
       <Header>
@@ -77,10 +115,10 @@ const Dashboard: React.FC = () => {
           <img src={logo} alt="GoBarber" />
 
           <Profile>
-            {/* <img src={user.avatar_url} alt={user.name} /> */}
+            <img src={user.avatar_url} alt={user.name} />
             <div>
               <span>Bem-vindo</span>
-              {/* <strong>{user.name}</strong> */}
+              <strong>{user.name}</strong>
             </div>
 
             <button type="button" onClick={signOut}>
@@ -94,13 +132,13 @@ const Dashboard: React.FC = () => {
         <Schedule>
           <h1>Horários agendados</h1>
           <p>
-            <span>Hoje</span>
-            <span>Dia 06</span>
-            <span>Segunda-feira</span>
+            {isToday(selectedDate) && <span>Hoje</span>}
+            <span>{selectedDateAsText}</span>
+            <span>{selectedWeekDay}</span>
           </p>
 
           <NextAppointment>
-            <strong>Atendimento a seguir</strong>
+            <strong>Agendamento a seguir</strong>
             <div>
               <img src="" alt="André Coelho" />
               <strong>André Coelho</strong>

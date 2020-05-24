@@ -32,6 +32,7 @@ export const HeaderContent = styled.div`
 `;
 
 export const Profile = styled.div`
+  flex: 1;
   display: flex;
   align-items: center;
   margin-left: 80px;
